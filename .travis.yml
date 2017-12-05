@@ -1,0 +1,50 @@
+---
+language: python
+branch:
+    only:
+        - master
+python:
+    - 2.7
+
+matrix:
+    fast_finish: true
+
+git:
+    submodules: false
+
+env:
+    global:
+        - TYPOS="'ecoh' 'roel' 'fixup!' 'squash!' 'FIXME' '<<<<<<<' '=======' '>>>>>>>'"
+        # fix vim syntax highlighting: "
+
+before_install:
+  - sudo apt-get update -qq
+  - pip install ansible==2.3
+
+install:
+  # Add ansible.cfg to pick up roles path.
+  - echo -e '[defaults]\nroles_path = ../' > ansible.cfg
+  # Galaxy would normally install this with a cevich prefix
+  - export ROLEBASE="$(basename $PWD)" && ln -sfv "$ROLEBASE" "../cevich.$ROLEBASE"
+
+script:
+  - >
+        echo "$(git log -1 --format=%H origin/master)" > /tmp/start;
+        echo "$(git log -1 --format=%H HEAD)" > /tmp/end;
+        git log -p $(cat /tmp/start)..$(cat /tmp/end) -- . ':!.travis.yml' &> /tmp/commits;
+        echo "Typos found:";
+        egrep -a -i -2 "$TYPOS" /tmp/commits | tee /tmp/typos;
+        test "$(cat /tmp/typos | wc -l)" -eq "0" || exit 1;
+  - stat /tmp/foobar || true
+  - ansible-playbook -i tests/inventory tests/test.yml --verbose --syntax-check
+  - stat /tmp/foobar || true
+  - ansible-playbook -i tests/inventory tests/test.yml --verbose
+  - >
+        ansible-playbook -i tests/inventory tests/again.yml --verbose | tee /tmp/idempotence;
+        grep -q 'changed=0.*failed=0' /tmp/idempotence \
+            && (echo 'Idempotence test: pass' && exit 0) \
+            || (echo 'Idempotence test: fail' && exit 1);
+  - stat /tmp/foobar || true
+
+notifications:
+    webhooks: https://galaxy.ansible.com/api/v1/notifications/
