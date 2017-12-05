@@ -1,10 +1,12 @@
 Touchstone
 ===========
 
-Ansible role to easily make sets of plays, roles or tasks idempotent.
-This is critical for some sequence declarations.  For example
+`Ansible Galaxy enabled`_ role to easily make sets of plays, roles or
+tasks idempotent. This is critical for some sequence declarations.  For example
 if one role does partitioning, and another does formatting.  Re-applying
 that sequence in the future stands a good chance of wrecking your data.
+
+.. _`Ansible Galaxy Page`: https://galaxy.ansible.com/cevich/touchstone/
 
 Requirements
 ------------
@@ -23,9 +25,10 @@ Role Variables
    name of the current playbook.
 
 ``touchstone_filepath``:
-   Directory path where the touchstone ``stone_name`` will exist.  Must
-   be a permanent and writable directory for ``ansible_user``, i.e. not
-   a ``tmpdir`` based ``/tmp``.
+   Optional, directory path where the touchstone will be checked or written.
+   Must be a permanent, and writable directory for ``ansible_user``, i.e. not
+   a ``tmpdir`` based ``/tmp``.  A lock file will be created/checked in this
+   directory whether or not the touchstone is touched.
 
 ``stone_touched``:
    A boolean value, set during the role to reflect the current touchstone
@@ -44,7 +47,19 @@ Example Playbook
 
     - hosts: all
       roles:
-         - cevich.parallel_git_repos
+         - role: cevich.touchstone
+
+         - role: something
+           when: not stone_touched
+
+         - role: another_thing
+           when: not stone_touched
+
+         - role: final_thing
+           when: not stone_touched
+
+         - role: cevich.touchstone
+           touch_touchstone: True
 
 License
 -------
