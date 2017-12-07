@@ -35,25 +35,31 @@
     - 'Machine_id {{ hostvars.localhost.ansible_machine_id }}'
     - 'On {{ hostvars.localhost.ansible_date_time.iso8601 }}'
 
-- name: Touchstone script is executed to modify and/or retrieve stone status
-  script: '{{ result }}'
-  changed_when: touch_touchstone and
-                result.stdout | trim | lower == "true" and
-                result.stderr | trim == ''
-  register: result
+- name: Tasks are only run outside of --check mode
+  block:
 
-- name: Script output expectations are verified
-  assert:
-    that: 'result.stdout | trim | lower in ["true","false"]'
+    - name: Touchstone script is executed to modify and/or retrieve stone status
+      script: '{{ result }}'
+      changed_when:
+                    touch_touchstone and
+                    result.stdout | trim | lower == "true" and
+                    result.stderr | trim == ''
+      register: result
 
-- name: Touchstone result is converted into boolean
-  set_fact:
-    stone_touched: '{{ result.stdout | trim | lower == "true" }}'
+    - name: Script output expectations are verified
+      assert:
+        that: 'result.stdout | trim | lower in ["true","false"]'
 
-- name: Touchstone variables are debugged
-  debug:
-    var: '{{ item }}'
-  with_items:
-    - stone_name
-    - stone_touched
-    - result.stderr
+    - name: Touchstone result is converted into boolean
+      set_fact:
+        stone_touched: '{{ result.stdout | trim | lower == "true" }}'
+
+    - name: Touchstone variables are debugged
+      debug:
+        var: '{{ item }}'
+      with_items:
+        - stone_name
+        - stone_touched
+        - result.stderr
+
+  when: not ansible_check_mode | default(False)
