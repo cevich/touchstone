@@ -8,3 +8,6 @@ stone_name: "{{ playbook_dir | basename }}"
 
 # Full/absolute path where touchstone lives, must be permanent and readable/writable.
 touchstone_filepath: '{{ ansible_user_dir | default("/var/tmp") }}'
+
+# Ansible inventory name of the control-host for stone initialization
+touchstone_control_host: localhost

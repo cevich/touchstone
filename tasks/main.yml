@@ -4,10 +4,17 @@
   set_fact:
     stone_touched: False
 
+- name: Setup is run against the touchstone_control_host
+  setup:
+    gather_subset: network
+  when: 'touchstone_control_host not in hostvars | list'
+
 - name: Input expectations are verified
   assert:
     that:
-      - 'hostvars.localhost.ansible_machine_id | default("", True) | trim | length'
+      - 'touchstone_control_host | default("", True) | trim | length'
+      - 'touchstone_control_host in hostvars | list'
+      - 'hostvars[touchstone_control_host].ansible_machine_id | default("", True) | trim | length'
       - 'stone_touched == False'  # make sure it's not read-only
       - 'touchstone_filepath | default("", True) | trim | length'
       - 'touch_touchstone | default(False) in [True, False]'
@@ -31,9 +38,9 @@
     result: '{{ result }} {{ item | quote }}'
   when: touch_touchstone | default(False)
   with_items:
-    - 'Touched by {{ hostvars.localhost.ansible_nodename }}'
-    - 'Machine_id {{ hostvars.localhost.ansible_machine_id }}'
-    - 'On {{ hostvars.localhost.ansible_date_time.iso8601 }}'
+    - 'Touched by {{ hostvars[touchstone_control_host].ansible_nodename }}'
+    - 'Machine_id {{ hostvars[touchstone_control_host].ansible_machine_id }}'
+    - 'On {{ hostvars[touchstone_control_host].ansible_date_time.iso8601 }}'
 
 - name: Tasks are only run outside of --check mode
   block:
