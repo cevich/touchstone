@@ -41,6 +41,11 @@ Role Variables
 > touchstone state. When `True`, it indicates the stone was touched at
 > least once in the past.
 
+`touchstone_control_host`:
+> Optional, defaults to ``localhost``.  When touching a touchstone, details
+> from this inventory host will be used for the ``touchstone_filepath`` content.
+
+
 Dependencies
 ------------
 
