@@ -65,6 +65,7 @@
       debug:
         var: '{{ item }}'
       with_items:
+        - touchstone_filepath
         - stone_name
         - stone_touched
         - result.stderr

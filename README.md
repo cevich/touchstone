@@ -24,8 +24,7 @@ Role Variables
 `stone_name`:
 >
 > Optional, identification string to use when multiple end-states must
-> be tracked. For example multiple playbooks. Defaults to the base,
-> directory name of the current playbook.
+> be tracked. For example multiple playbooks. Defaults to ``.touchstone``.
 
 `touchstone_filepath`:
 >
