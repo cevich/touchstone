@@ -53,13 +53,17 @@
                     result.stderr | trim == ''
       register: result
 
+    - name: Script output is debugged
+      debug:
+        var: result
+
     - name: Script output expectations are verified
       assert:
-        that: 'result.stdout | trim | lower in ["true","false"]'
+        that: 'result.stdout | trim | bool in [True, False]'
 
     - name: Touchstone result is converted into boolean
       set_fact:
-        stone_touched: '{{ result.stdout | trim | lower == "true" }}'
+        stone_touched: '{{ result.stdout | trim | bool }}'
 
     - name: Touchstone variables are debugged
       debug:
@@ -68,6 +72,5 @@
         - touchstone_filepath
         - stone_name
         - stone_touched
-        - result.stderr
 
   when: not ansible_check_mode | default(False)
