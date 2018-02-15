@@ -1,76 +1,51 @@
 ---
 
-- name: stone_touched fact is initially false
+- name: stone_touched fact is initially false and template path is buffered
   set_fact:
     stone_touched: False
+    result: "{{ role_path }}/templates/touchstone.j2"
 
 - name: Setup is run against the touchstone_control_host
   setup:
     gather_subset: network
-  when: 'touchstone_control_host not in hostvars | list'
+  when: touchstone_control_host not in hostvars | list or
+        hostvars[touchstone_control_host].ansible_machine_id is undefined
 
 - name: Input expectations are verified
   assert:
     that:
       - 'touchstone_control_host | default("", True) | trim | length'
-      - 'touchstone_control_host in hostvars | list'
       - 'hostvars[touchstone_control_host].ansible_machine_id | default("", True) | trim | length'
       - 'stone_touched == False'  # make sure it's not read-only
       - 'touchstone_filepath | default("", True) | trim | length'
-      - 'touch_touchstone | default(False) in [True, False]'
-      - '"{{ role_path }}/files/touchstone.py" | is_file'
-
-- name: Touchstone script command-line arguments are initialized
-  set_fact:
-    result: 'touchstone.py'
-
-- name: Touchstone script command-line has --touch appended
-  set_fact:
-    result: '{{ result }} --touch'
-  when: touch_touchstone | default(False)
-
-- name: Touchstone script command-line has complete touchstone_filepath appended
-  set_fact:
-    result: '{{ result }} {{ touchstone_filepath }}/.{{ stone_name }}.touchstone'
-
-- name: Touchstone script command-line has content lines appended
-  set_fact:
-    result: '{{ result }} {{ item | quote }}'
-  when: touch_touchstone | default(False)
-  with_items:
-    - 'Touched by {{ hostvars[touchstone_control_host].ansible_nodename }}'
-    - 'Machine_id {{ hostvars[touchstone_control_host].ansible_machine_id }}'
-    - 'On {{ hostvars[touchstone_control_host].ansible_date_time.iso8601 }}'
+      - 'touch_touchstone | default(False) | bool in [True, False]'
+      - 'result | is_file'
+      - 'role_path ~ "/templates/touchstone.j2" | is_file'
 
 - name: Tasks are only run outside of --check mode
   block:
 
     - name: Touchstone script is executed to modify and/or retrieve stone status
-      script: '{{ result }}'
+      script: >
+        touchstone.py \
+        {{ "--touch" if touch_touchstone | bool else "" }} \
+        {{ touchstone_filepath }}/.{{ stone_name }}.touchstone \
+        {% for line in lookup("template", result).splitlines() %} \
+            {{ line | quote }} \
+        {% endfor %}
+      # N/B: The script module combines stderr/stdout from the script
       changed_when:
-                    touch_touchstone and
-                    result.stdout | trim | lower == "true" and
-                    result.stderr | trim == ''
+                    touch_touchstone | bool and
+                    result.stdout_lines[0] | trim | bool and
+                    result.stdout_lines | length == 1
       register: result
 
-    - name: Script output is debugged
-      debug:
-        var: result
+    - name: The script's result is debugged
+      debug: var='result'
 
-    - name: Script output expectations are verified
-      assert:
-        that: 'result.stdout | trim | bool in [True, False]'
-
-    - name: Touchstone result is converted into boolean
+    - name: The stone is/was touched, set stone_touched fact True
       set_fact:
-        stone_touched: '{{ result.stdout | trim | bool }}'
+        stone_touched: True
+      when: result.stdout_lines[0] | trim | bool
 
-    - name: Touchstone variables are debugged
-      debug:
-        var: '{{ item }}'
-      with_items:
-        - touchstone_filepath
-        - stone_name
-        - stone_touched
-
-  when: not ansible_check_mode | default(False)
+  when: not ansible_check_mode | default(False) | bool
