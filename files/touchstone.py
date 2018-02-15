@@ -77,7 +77,8 @@ def main(argv):
     sys.stdout.write('{0}\n'.format(state))
     # Do not print contents upon first touch as "changed" signal to ansible
     if state and already_touched:
-        sys.stderr.write('{0}'.format(contents))
+        # Script action merges stderr->stdout
+        sys.stdout.write('{0}'.format(contents))
 
 
 if __name__ == "__main__":

@@ -2,22 +2,20 @@
 
 - hosts: all
   gather_subset: network
-  vars:
-    stone_name: foobar
-    touchstone_filepath: /tmp
+  vars_files:
+    - '{{ playbook_dir }}/vars.yml'
   pre_tasks:
     - assert: that='stone_touched is defined'
   roles:
     - cevich.touchstone
   post_tasks:
-    - assert: that='stone_touched == False'
+    - assert: that='stone_touched | bool == expected | bool'
 
 - hosts: all
-  vars:
-    stone_name: foobar
-    touchstone_filepath: /tmp
+  vars_files:
+    - '{{ playbook_dir }}/vars.yml'
   pre_tasks:
-    - assert: that='stone_touched == False'
+    - assert: that='stone_touched | bool == expected | bool'
   roles:
     - role: cevich.touchstone
       touch_touchstone: True
@@ -25,9 +23,8 @@
     - assert: that='stone_touched == True'
 
 - hosts: all
-  vars:
-    stone_name: foobar
-    touchstone_filepath: /tmp
+  vars_files:
+    - '{{ playbook_dir }}/vars.yml'
   pre_tasks:
     - assert: that='stone_touched == True'
   roles:

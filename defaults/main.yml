@@ -4,7 +4,7 @@
 touch_touchstone: False
 
 # The name of the touchstone, in case there's more than one.
-stone_name: ".touchstone"
+stone_name: "touchstone"
 
 # Full/absolute path where touchstone lives, must be permanent and readable/writable.
 touchstone_filepath: '{{ ansible_user_dir | default("/var/tmp") }}'

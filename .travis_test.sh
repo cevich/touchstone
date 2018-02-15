@@ -1,23 +1,20 @@
 
 set -e
 
-no_foo() {
-    echo "Verifying test marker file absence"
-    stat /tmp/foobar || true
-}
-
 echo "Testing role syntax"
-no_foo
 ansible-playbook -i tests/inventory tests/test.yml --verbose --syntax-check
 
+rm -f /tmp/.foobar.touchstone
+
 echo "Testing role functionality"
-no_foo
-ansible-playbook -i tests/inventory tests/test.yml
+ansible-playbook -i tests/inventory -e expected=False --verbose tests/test.yml
 
 echo "Testing role idempotence"
-no_foo
-ansible-playbook -i tests/inventory tests/again.yml \
+OUTPUT="$(mktemp -p '' $(basename $0)_XXXX)"
+trap "rm -f $OUTPUT" EXIT
+ansible-playbook -i tests/inventory -e expected=True --verbose tests/test.yml \
+    | tee "$OUTPUT"
+cat "$OUTPUT" \
     | grep -q 'changed=0.*failed=0' \
             && (echo 'Idempotence test: pass' && exit 0) \
             || (echo 'Idempotence test: fail' && exit 1)
-no_foo
