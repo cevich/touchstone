@@ -25,6 +25,9 @@
 - name: Tasks are only run outside of --check mode
   block:
 
+    - name: The touchstone file path on target is debugged
+      debug: msg='{{ touchstone_filepath }}/.{{ stone_name }}.touchstone'
+
     - name: Touchstone script is executed to modify and/or retrieve stone status
       script: >
         touchstone.py \
@@ -39,9 +42,6 @@
                     result.stdout_lines[0] | trim | bool and
                     result.stdout_lines | length == 1
       register: result
-
-    - name: The script's result is debugged
-      debug: var='result'
 
     - name: The stone is/was touched, set stone_touched fact True
       set_fact:
