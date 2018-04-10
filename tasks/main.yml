@@ -1,39 +1,28 @@
 ---
 
-- name: stone_touched fact is initially false and template path is buffered
-  set_fact:
-    stone_touched: False
-    result: "{{ role_path }}/templates/touchstone.j2"
-
-- name: Setup is run against the touchstone_control_host
-  setup:
-    gather_subset: network
-  when: touchstone_control_host not in hostvars | list or
-        hostvars[touchstone_control_host].ansible_machine_id is undefined
-
 - name: Input expectations are verified
   assert:
     that:
-      - 'touchstone_control_host | default("", True) | trim | length'
-      - 'hostvars[touchstone_control_host].ansible_machine_id | default("", True) | trim | length'
-      - 'stone_touched == False'  # make sure it's not read-only
       - 'touchstone_filepath | default("", True) | trim | length'
       - 'touch_touchstone | default(False) | bool in [True, False]'
-      - 'result | is_file'
-      - 'role_path ~ "/templates/touchstone.j2" | is_file'
+      - 'touchstone_template | is_file'
 
-- name: Tasks are only run outside of --check mode
+- name: The touchstone file path on target is debugged
+  debug: msg='{{ touchstone_filepath }}/.{{ stone_name }}.touchstone'
+
+- name: The stone was not touched, unless prooven otherwise.
+  set_fact:
+    stone_touched: false
+
+- name: Script tasks only run outside of --check mode
   block:
 
-    - name: The touchstone file path on target is debugged
-      debug: msg='{{ touchstone_filepath }}/.{{ stone_name }}.touchstone'
-
-    - name: Touchstone script is executed to modify and/or retrieve stone status
+    - name: Touchstone script is executed to set and/or retrieve stone status
       script: >
         touchstone.py \
         {{ "--touch" if touch_touchstone | bool else "" }} \
         {{ touchstone_filepath }}/.{{ stone_name }}.touchstone \
-        {% for line in lookup("template", result).splitlines() %} \
+        {% for line in lookup("template", touchstone_template).splitlines() %} \
             {{ line | quote }} \
         {% endfor %}
       # N/B: The script module combines stderr/stdout from the script

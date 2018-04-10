@@ -1,3 +1,1 @@
-Touched by {{ hostvars[touchstone_control_host].ansible_nodename }}
-Machine_id {{ hostvars[touchstone_control_host].ansible_machine_id }}
-On {{ hostvars[touchstone_control_host].ansible_date_time.iso8601 }}
+Touched by {{ lookup("pipe","uname -a") }}
